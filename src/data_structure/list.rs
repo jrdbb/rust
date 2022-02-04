@@ -1,32 +1,66 @@
-struct List<T> {
-    mValue: Option<T>,
-    mPrev: Option<Box<List<T>>>,
-    mNext: Option<Box<List<T>>>,
+pub enum List<T> {
+    Nil,
+    Elem { value: T, next: Box<List<T>>},
 }
 
 impl<T> List<T> {
     pub fn new() -> Self {
-        List {mValue: None, mPrev: None, mNext: None }
+        List::Nil
     }
 
     pub fn empty(&self) -> bool {
-        self.mNext.is_none()
+        match self {
+            List::Nil => true,
+            List::Elem{value: _, next: _} => false
+        }
     }
 
-    pub fn insert(&self, value: T) {
-        let currentNext = self.mNext;
-        self.mNext = Some(Box::new(List {mValue: Some(value), mPrev: Some(Box::new(self)), mNext: currentNext}));
+    pub fn insert(&mut self, value: T) {
+        match self {
+            List::Nil => { *self = List::Elem {value: value, next: Box::new(List::Nil)} },
+            List::Elem{value:_, next} => {
+                // intend to move the field out of a reference...this is an unsafe action
+                *next = Box::new(List::Elem{value: value, next: std::mem::take(next)});
+            }
+        }
     }
 
-    pub fn get(&self) -> &T
+    pub fn unwarp(&self) -> &T
     {
-        &self.mValue.unwrap()
+        match self {
+            List::Nil => panic!(""),
+            List::Elem{value, next: _} => &value
+        }
     }
 
-    pub fn remove(&self)
+    pub fn next(&self) -> &List<T>
     {
-
+        match self {
+            List::Nil => panic!(""),
+            List::Elem{value:_, next} => &next
+        }
     }
+
+    pub fn remove(&mut self)
+    {
+        match self {
+            List::Nil => panic!(""),
+            List::Elem{value: _, next} => {
+                match &**next {
+                    List::Nil => {
+                        *self = List::Nil;
+                    },
+                    List::Elem{value:_, next: nn} => {
+
+                    }
+                }
+            }
+        }
+    }
+}
+
+impl<T> Default for List<T> {
+    fn default() -> Self { List::Nil }
 }
 
 #[cfg(test)]
@@ -35,6 +69,10 @@ mod tests {
 
     #[test]
     fn construct() {
-        let l : List<i32> = List::new();
+        let mut l : List<i32> = List::new();
+        assert_eq!(l.empty(), true);
+        l.insert(12);
+        assert_eq!(l.empty(), false);
+        assert_eq!(l.unwarp(), &12);
     }
 }
